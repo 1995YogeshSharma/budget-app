@@ -24,6 +24,9 @@ class _State extends State<BudgetApp> {
   String _username = "";
   String _password = "";
 
+  String _balanceDocId = "";
+  String _transDocId = "";
+
   // controllers
   TextEditingController _expenseController = new TextEditingController();
   TextEditingController _incomeController = new TextEditingController();
@@ -65,38 +68,58 @@ class _State extends State<BudgetApp> {
 
   @override
   Widget build(BuildContext context) {
-    void _updateAmount(String type) {
-      if (type == 'expense') {
-        setState(() {
-          _amount = _amount - _expenseAmount;
-        });
-        _transactions.add(TransactionRow(
-            DateTime.now().toString(), 'Expense', _expenseAmount));
-        _expenseController.text = '';
-      } else if (type == 'income') {
-        setState(() {
-          _amount = _amount + _incomeAmount;
-        });
-        _transactions.add(
-            TransactionRow(DateTime.now().toString(), 'Income', _incomeAmount));
-        _incomeController.text = '';
+    Future<void> _updateAmount(String type) async {
+      int _newAmount = 0;
+      TransactionRow? _newTransaction = null;
+
+      if (type == 'income') {
+        _newAmount = _amount + _incomeAmount;
+        _newTransaction =
+            TransactionRow(DateTime.now().toString(), 'Income', _incomeAmount);
+      } else if (type == 'expense') {
+        _newAmount = _amount - _expenseAmount;
+        _newTransaction = TransactionRow(
+            DateTime.now().toString(), 'Expense', _expenseAmount);
       }
+
+      setState(() {
+        _amount = _newAmount;
+        _transactions.add(_newTransaction!);
+      });
+      await _appwrite.updateBalance(_balanceDocId, _amount, _username);
+      await _appwrite.updateTransaction(_transDocId,
+          _transactions.map((e) => e.transaction!).toList(), _username);
     }
 
-    void _loginUser() {
-      print('Login User called');
-      _appwrite.login(_username, _password);
-      //Navigator.of(context).pop();
+    Future<void> _updateInfoFromDB(String _username) async {
+      // get balance doc id
+      _balanceDocId = (await _appwrite.getBalanceDocId(_username))!;
+
+      // get transaction doc id
+      _transDocId = (await _appwrite.getTransactionDocId(_username))!;
+
+      // get balance
+      _amount = (await _appwrite.getBalance(_balanceDocId))!;
+
+      // get transactions
+      List<Transaction> _trans = (await _appwrite.getTransaction(_transDocId))!;
+      _transactions =
+          _trans.map((e) => TransactionRow(e.date, e.type, e.amount)).toList();
     }
 
-    void _signupUser() {
-      print('Signup User called with ' +
-          _username.toString() +
-          _password.toString());
-      _appwrite.signup(_username, _password);
-      _appwrite.createBalance(_username);
-      _appwrite.createTransaction(_username);
-      //Navigator.of(context).pop();
+    Future<void> _loginUser() async {
+      print('Login User called with $_username and $_password');
+      await _appwrite.login(_username, _password);
+      await _updateInfoFromDB(_username);
+      print('Login done!');
+    }
+
+    Future<void> _signupUser() async {
+      print('Signup User called with $_username and $_password');
+      await _appwrite.signup(_username, _password);
+      await _appwrite.createBalance(_username);
+      await _appwrite.createTransaction(_username);
+      print('Signup done!');
     }
 
     return Scaffold(
@@ -126,7 +149,8 @@ class _State extends State<BudgetApp> {
                             margin: EdgeInsets.only(right: 30.0, left: 30.0),
                             child: Row(children: [
                               ElevatedButton(
-                                  onPressed: _loginUser, child: Text("Login")),
+                                  onPressed: () => {_loginUser()},
+                                  child: Text("Login")),
                               Spacer(),
                               ElevatedButton(
                                   onPressed: _signupUser,
