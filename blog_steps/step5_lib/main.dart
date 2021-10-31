@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'model.dart';
-import 'appwrite_client.dart';
 
 void main() {
   // runApp(BudgetApp());
@@ -30,8 +29,31 @@ class _State extends State<BudgetApp> {
   TextEditingController _usernameController = new TextEditingController();
   TextEditingController _passwordController = new TextEditingController();
 
-  // appwrite instance
-  AppWriteClient _appwrite = AppWriteClient();
+  void _updateAmount(String type) {
+    if (type == 'expense') {
+      setState(() {
+        _amount = _amount - _expenseAmount;
+      });
+      _transactions.add(
+          TransactionRow(DateTime.now().toString(), 'Expense', _expenseAmount));
+      _expenseController.text = '';
+    } else if (type == 'income') {
+      setState(() {
+        _amount = _amount + _incomeAmount;
+      });
+      _transactions.add(
+          TransactionRow(DateTime.now().toString(), 'Income', _incomeAmount));
+      _incomeController.text = '';
+    }
+  }
+
+  void _loginUser() {
+    print('Login User called');
+  }
+
+  void _signupUser() {
+    print('Signup User called');
+  }
 
   @override
   void initState() {
@@ -65,40 +87,6 @@ class _State extends State<BudgetApp> {
 
   @override
   Widget build(BuildContext context) {
-    void _updateAmount(String type) {
-      if (type == 'expense') {
-        setState(() {
-          _amount = _amount - _expenseAmount;
-        });
-        _transactions.add(TransactionRow(
-            DateTime.now().toString(), 'Expense', _expenseAmount));
-        _expenseController.text = '';
-      } else if (type == 'income') {
-        setState(() {
-          _amount = _amount + _incomeAmount;
-        });
-        _transactions.add(
-            TransactionRow(DateTime.now().toString(), 'Income', _incomeAmount));
-        _incomeController.text = '';
-      }
-    }
-
-    void _loginUser() {
-      print('Login User called');
-      _appwrite.login(_username, _password);
-      //Navigator.of(context).pop();
-    }
-
-    void _signupUser() {
-      print('Signup User called with ' +
-          _username.toString() +
-          _password.toString());
-      _appwrite.signup(_username, _password);
-      _appwrite.createBalance(_username);
-      _appwrite.createTransaction(_username);
-      //Navigator.of(context).pop();
-    }
-
     return Scaffold(
       appBar: AppBar(
         title: Text('Budget App'),
@@ -125,12 +113,15 @@ class _State extends State<BudgetApp> {
                         Container(
                             margin: EdgeInsets.only(right: 30.0, left: 30.0),
                             child: Row(children: [
-                              ElevatedButton(
-                                  onPressed: _loginUser, child: Text("Login")),
-                              Spacer(),
-                              ElevatedButton(
-                                  onPressed: _signupUser,
-                                  child: Text("Sign up"))
+                              Expanded(
+                                  child: ElevatedButton(
+                                      onPressed: _loginUser,
+                                      child: Text("Login"))),
+                              Expanded(child: Spacer()),
+                              Expanded(
+                                  child: ElevatedButton(
+                                      onPressed: _signupUser,
+                                      child: Text("Sign up")))
                             ]))
                       ]))))
         ],
@@ -165,7 +156,6 @@ class _State extends State<BudgetApp> {
             ]),
             Divider(),
             // transaction row
-            Center(child: Text("Transactions")),
             Column(
                 children: _transactions.map((TransactionRow transaction) {
               return transaction;
@@ -196,3 +186,4 @@ class TransactionRow extends StatelessWidget {
     ]);
   }
 }
+
