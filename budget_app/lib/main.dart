@@ -124,6 +124,10 @@ class _State extends State<BudgetApp> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: Image.asset(
+          'imgs/built-with-appwrite.png',
+          scale: 2.0,
+        ),
         title: Text('Budget App'),
         actions: <Widget>[
           IconButton(
