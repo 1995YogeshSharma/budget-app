@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:appwrite/appwrite.dart';
+import 'appwrite_client.dart';
+import 'package:appwrite/models.dart';
 
 void main() {
   // runApp(BudgetApp());
@@ -43,6 +44,14 @@ class _state extends State<BudgetApp> {
   TextEditingController _expenseController = new TextEditingController();
   TextEditingController _incomeController = new TextEditingController();
 
+  String _username = "";
+  String _password = "";
+
+  TextEditingController _userNameController = new TextEditingController();
+  TextEditingController _passwordController = new TextEditingController();
+
+  AppWrite auth = AppWrite();
+
   @override
   void initState() {
     super.initState();
@@ -56,10 +65,47 @@ class _state extends State<BudgetApp> {
         this._incomeAmount = int.parse(_incomeController.text);
       });
     });
+    _userNameController.addListener(() {
+      setState(() {
+        this._username = _userNameController.text;
+      });
+    });
+    _passwordController.addListener(() {
+      setState(() {
+        this._password = _passwordController.text;
+      });
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    void _initializeForUser() {
+      if (_username == "" || _password == "") {
+        return;
+      }
+
+      // Try login
+      auth.login(_username, _password).then((session) {
+        print("Login successful");
+        print(session);
+        auth.createDocumentForNewUser(_username);
+      }).catchError((error) {
+        print("Login failed");
+        print(error);
+
+        print("Signing up new user");
+        auth.signup(_username, _password).then((user) {
+          print(user.email);
+          print(user.name);
+
+          auth.createDocumentForNewUser(_username);
+        }).catchError((error) {
+          print('error occured');
+          print(error);
+        });
+      });
+    }
+
     void _addExpenseClick() {
       _amount = _amount - _expenseAmount;
       _transactions.add(TransactionRow(
@@ -90,17 +136,17 @@ class _state extends State<BudgetApp> {
                       padding: EdgeInsets.only(right: 30.0, left: 30.0),
                       child: Column(children: [
                         TextField(
-                          decoration: InputDecoration(hintText: "User Name"),
+                          decoration: InputDecoration(hintText: "User Email"),
                           keyboardType: TextInputType.text,
-                          controller: null,
+                          controller: _userNameController,
                         ),
                         TextField(
                           decoration: InputDecoration(hintText: "Password"),
                           keyboardType: TextInputType.text,
-                          controller: null,
+                          controller: _passwordController,
                         ),
                         ElevatedButton(
-                            onPressed: () => {}, child: Text("Login"))
+                            onPressed: _initializeForUser, child: Text("Login"))
                       ]))),
               padding: EdgeInsets.only(right: 50.0),
             )
