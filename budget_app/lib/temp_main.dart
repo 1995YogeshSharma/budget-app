@@ -18,8 +18,6 @@ class _State extends State<BudgetApp> {
   int _expenseAmount = 0;
   int _incomeAmount = 0;
 
-  String _username = "";
-
   // controllers
   TextEditingController _expenseController = new TextEditingController();
   TextEditingController _incomeController = new TextEditingController();
@@ -60,58 +58,7 @@ class _State extends State<BudgetApp> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        leadingWidth: 100,
-        leading: Container(
-          padding: EdgeInsets.only(left: 10.0),
-          child: Image.asset(
-            'imgs/built-with-appwrite.png',
-            fit: BoxFit.contain,
-          ),
-          width: 96.0,
-          height: 96.0,
-        ),
         title: Text('Budget App'),
-        actions: _username == ""
-            ? <Widget>[
-                IconButton(
-                    padding: EdgeInsets.only(right: 50.0),
-                    icon: Icon(Icons.account_circle),
-                    onPressed: () => showModalBottomSheet(
-                        context: context,
-                        builder: (context) => Container(
-                            padding: EdgeInsets.only(right: 30.0, left: 30.0),
-                            child: Column(children: [
-                              TextField(
-                                decoration:
-                                    InputDecoration(hintText: "User Email"),
-                                keyboardType: TextInputType.text,
-                                controller: null,
-                              ),
-                              TextField(
-                                decoration:
-                                    InputDecoration(hintText: "Password"),
-                                keyboardType: TextInputType.text,
-                                controller: null,
-                              ),
-                              Divider(),
-                              Container(
-                                  margin:
-                                      EdgeInsets.only(right: 30.0, left: 30.0),
-                                  child: Row(children: [
-                                    ElevatedButton(
-                                        onPressed: null, child: Text("Login")),
-                                    Spacer(),
-                                    ElevatedButton(
-                                        onPressed: null, child: Text("Sign up"))
-                                  ]))
-                            ]))))
-              ]
-            : <Widget>[
-                IconButton(
-                    padding: EdgeInsets.only(right: 50.0),
-                    icon: Icon(Icons.logout),
-                    onPressed: () => null)
-              ],
       ),
       body: Container(
         child: Center(
