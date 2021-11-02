@@ -23,6 +23,7 @@ class _State extends State<BudgetApp> {
 
   String _username = "";
   String _password = "";
+  String _sessionId = "";
 
   String _balanceDocId = "";
   String _transDocId = "";
@@ -76,10 +77,12 @@ class _State extends State<BudgetApp> {
         _newAmount = _amount + _incomeAmount;
         _newTransaction =
             TransactionRow(DateTime.now().toString(), 'Income', _incomeAmount);
+        _incomeController.text = "";
       } else if (type == 'expense') {
         _newAmount = _amount - _expenseAmount;
         _newTransaction = TransactionRow(
             DateTime.now().toString(), 'Expense', _expenseAmount);
+        _expenseController.text = "";
       }
 
       setState(() {
@@ -105,67 +108,94 @@ class _State extends State<BudgetApp> {
       List<Transaction> _trans = (await _appwrite.getTransaction(_transDocId))!;
       _transactions =
           _trans.map((e) => TransactionRow(e.date, e.type, e.amount)).toList();
+
+      setState(() {});
     }
 
-    Future<void> _loginUser() async {
+    Future<void> _logoutUser() async {
+      await _appwrite.logout(_sessionId);
+      _username = "";
+      _password = "";
+      _sessionId = "";
+      _amount = 0;
+      _transactions = [];
+      setState(() {});
+      print('Logout done');
+    }
+
+    Future<void> _loginUser(context) async {
       print('Login User called with $_username and $_password');
-      await _appwrite.login(_username, _password);
+      _sessionId = (await _appwrite.login(_username, _password))!;
       await _updateInfoFromDB(_username);
       print('Login done!');
+      Navigator.pop(context);
     }
 
-    Future<void> _signupUser() async {
+    Future<void> _signupUser(context) async {
       print('Signup User called with $_username and $_password');
       await _appwrite.signup(_username, _password);
       await _appwrite.createBalance(_username);
       await _appwrite.createTransaction(_username);
       print('Signup done!');
+      _loginUser(context);
     }
 
     return Scaffold(
       appBar: AppBar(
+        leadingWidth: 100,
         leading: Container(
+          padding: EdgeInsets.only(left: 10.0),
           child: Image.asset(
             'imgs/built-with-appwrite.png',
             fit: BoxFit.contain,
           ),
-          width: 48.0,
+          width: 96.0,
           height: 96.0,
         ),
         title: Text('Budget App'),
-        actions: <Widget>[
-          IconButton(
-              padding: EdgeInsets.only(right: 50.0),
-              icon: Icon(Icons.login),
-              onPressed: () => showModalBottomSheet(
-                  context: context,
-                  builder: (context) => Container(
-                      padding: EdgeInsets.only(right: 30.0, left: 30.0),
-                      child: Column(children: [
-                        TextField(
-                          decoration: InputDecoration(hintText: "User Email"),
-                          keyboardType: TextInputType.text,
-                          controller: _usernameController,
-                        ),
-                        TextField(
-                          decoration: InputDecoration(hintText: "Password"),
-                          keyboardType: TextInputType.text,
-                          controller: _passwordController,
-                        ),
-                        Divider(),
-                        Container(
-                            margin: EdgeInsets.only(right: 30.0, left: 30.0),
-                            child: Row(children: [
-                              ElevatedButton(
-                                  onPressed: () => {_loginUser()},
-                                  child: Text("Login")),
-                              Spacer(),
-                              ElevatedButton(
-                                  onPressed: _signupUser,
-                                  child: Text("Sign up"))
-                            ]))
-                      ]))))
-        ],
+        actions: _username == ""
+            ? <Widget>[
+                IconButton(
+                    padding: EdgeInsets.only(right: 50.0),
+                    icon: Icon(Icons.account_circle),
+                    onPressed: () => showModalBottomSheet(
+                        context: context,
+                        builder: (context) => Container(
+                            padding: EdgeInsets.only(right: 30.0, left: 30.0),
+                            child: Column(children: [
+                              TextField(
+                                decoration:
+                                    InputDecoration(hintText: "User Email"),
+                                keyboardType: TextInputType.text,
+                                controller: _usernameController,
+                              ),
+                              TextField(
+                                decoration:
+                                    InputDecoration(hintText: "Password"),
+                                keyboardType: TextInputType.text,
+                                controller: _passwordController,
+                              ),
+                              Divider(),
+                              Container(
+                                  margin:
+                                      EdgeInsets.only(right: 30.0, left: 30.0),
+                                  child: Row(children: [
+                                    ElevatedButton(
+                                        onPressed: () => {_loginUser(context)},
+                                        child: Text("Login")),
+                                    Spacer(),
+                                    ElevatedButton(
+                                        onPressed: () => {_signupUser(context)},
+                                        child: Text("Sign up"))
+                                  ]))
+                            ]))))
+              ]
+            : <Widget>[
+                IconButton(
+                    padding: EdgeInsets.only(right: 50.0),
+                    icon: Icon(Icons.logout),
+                    onPressed: () => {_logoutUser()})
+              ],
       ),
       body: Container(
         child: Center(

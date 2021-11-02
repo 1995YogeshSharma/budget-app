@@ -14,8 +14,8 @@ class Transaction {
 
   Map<String, dynamic> toJson() {
     return {
-      'date': date,
-      'type': type,
+      'date': date.toString(),
+      'type': type.toString(),
       'amount': amount.toString(),
     };
   }

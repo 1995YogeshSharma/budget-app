@@ -25,13 +25,19 @@ class AppWriteClient {
     }
   }
 
-  Future<void> login(String email, String password) async {
+  Future<String?> login(String email, String password) async {
     Account auth = Account(client);
     try {
-      await auth.createSession(email: email, password: password);
+      var response = await auth.createSession(email: email, password: password);
+      return response.$id;
     } catch (e) {
       print('Error in login ' + e.toString());
     }
+  }
+
+  Future<void> logout(String sessionId) async {
+    Account auth = Account(client);
+    await auth.deleteSession(sessionId: sessionId);
   }
 
   // create balance
@@ -42,7 +48,11 @@ class AppWriteClient {
       await db.createDocument(collectionId: balanceCollectionId, data: {
         'email': email,
         'balance': 0,
-      });
+      }, write: [
+        '*'
+      ], read: [
+        '*'
+      ]);
     } catch (e) {
       print('Error in createBalance ' + e.toString());
     }
@@ -52,8 +62,8 @@ class AppWriteClient {
     print('Call to getBalanceId for => $email');
     Database db = Database(client);
     try {
-      DocumentList response =
-          await db.listDocuments(collectionId: balanceCollectionId);
+      DocumentList response = await db.listDocuments(
+          collectionId: balanceCollectionId, filters: ['email=$email']);
 
       if (response.documents.length > 0) {
         return response.documents[0].$id;
@@ -98,9 +108,17 @@ class AppWriteClient {
       Document response = await db.getDocument(
           collectionId: transactionCollectionId, documentId: id);
 
-      return response.data['transactions']
-          .map((e) => Transaction.fromJson(e))
-          .toList();
+      print(response.data['transactions']);
+      List<Transaction> trans = [];
+      if (response.data['transactions'] != null)
+        for (var t in response.data['transactions']) {
+          if (t == null) {
+            break;
+          }
+          trans.add(Transaction.fromJson(t));
+        }
+
+      return trans;
     } catch (e) {
       print('Error getting transactions document for ' + e.toString());
     }
@@ -129,7 +147,11 @@ class AppWriteClient {
       db.createDocument(collectionId: transactionCollectionId, data: {
         'email': email,
         'transactions': [],
-      });
+      }, write: [
+        '*'
+      ], read: [
+        '*'
+      ]);
     } catch (e) {
       print('Error creating transactions document for ' + e.toString());
     }
@@ -138,9 +160,10 @@ class AppWriteClient {
   // update transaction
   Future<void> updateTransaction(
       String id, List<Transaction> transactions, String email) async {
-    print('Call to updateBalance for => $id');
+    print('Call to updateTransaction for => $id');
     Database db = Database(client);
     try {
+      print(transactions.map((e) => e.toJson()).toList());
       await db.updateDocument(
         collectionId: transactionCollectionId,
         documentId: id,
